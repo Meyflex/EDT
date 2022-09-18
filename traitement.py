@@ -1,13 +1,13 @@
+import asyncio
 from requests_html import HTMLSession
+from requests_html import AsyncHTMLSession
+
 from jour import Jour
 from cour import Cours
 import os
-import time
 from calendermaker import CalenderMaker
 from ics import Calendar
 
-from icalendar import Calendar, Event, vCalAddress, vText
-import pytz
 from datetime import datetime
 import os
 from pathlib import Path
@@ -26,7 +26,7 @@ url_app5="https://ade-planning.polytech.universite-paris-saclay.fr/direct/?data=
 
 
 
-def get_data_from_url(url,day,week,Promo,calender):
+async def get_data_from_url(url,day,week,Promo,calender):
 
     dataSession=[]
     script="""
@@ -39,9 +39,9 @@ def get_data_from_url(url,day,week,Promo,calender):
     """
 
     
-    session=HTMLSession()
-    response = session.get(url)
-    response.html.render(10,script,sleep=2,reload=True,keep_page=True)
+    session=AsyncHTMLSession()
+    response =await session.get(url)
+    await response.html.arender(10,script,sleep=2,reload=True,keep_page=True)
      
     if response.html.find('#4')!=[]:
         
@@ -50,10 +50,10 @@ def get_data_from_url(url,day,week,Promo,calender):
         dateJourIcalender=day[2]+"-"+day[1]+"-"+day[0]
     
     EmploieDuTemps=[]
-    # i=0
-    # 
-    for i in range (40):
-        string="#inner"+str(i)
+    i=0
+    string="#inner"+str(i)
+    while response.html.find(string) !=[]:
+        
         dataSession.append(response.html.find(string) ) #recuperer les informations d'un jour 
         
 
@@ -67,7 +67,11 @@ def get_data_from_url(url,day,week,Promo,calender):
             cours = cours.replace("=\" ", "")
             cours = cours.replace("'>]", "")
             cours = cours.replace("\">]", "")
+            cours = cours.replace("\"", "")
+            cours = cours.replace("=''", "")
             cours=cours.split("null")
+            
+
            
             
             
@@ -75,31 +79,37 @@ def get_data_from_url(url,day,week,Promo,calender):
             if(len(cours)>1):
                 begin=cours[len(cours)-2].split("-")[0].split("h")[0]+":"+cours[len(cours)-2].split("-")[0].split("h")[1]+":00"
                 begin=begin.replace(" ","")
+
                 end=cours[len(cours)-2].split("-")[1].split("h")[0]+":"+cours[len(cours)-2].split("-")[1].split("h")[1]+":00"
                 end=end.replace(" ","")
 
                 #on recupere toutes les autres informations du cours
                 info=""
                 for acc in range (1,len(cours)-2):
+                    
                     info=info+"\n"+cours[acc]
-
-                c=Cours(cours[0],begin,end,info)
-                EmploieDuTemps.append(c)
+                if info.__contains__("ET4 MATE") or info.__contains__("ET4 PHOT") or info.__contains__("ET4 ELEC"):
+                    print("ET4")
+                else:
+                    c=Cours(cours[0],begin,end,info)
+                    EmploieDuTemps.append(c)
                 
-    j=Jour(dateJour[0],dateJourIcalender,EmploieDuTemps)
+        i=i+1
+        string="#inner"+str(i)
+    if len(EmploieDuTemps)>0:
+        j=Jour(dateJour[0],dateJourIcalender,EmploieDuTemps)
+    else:
+        j=Jour(dateJour[0],dateJourIcalender,[])
     print(j)
     calender.addEvent2(j)
-    
-
-    
-    response.session.close() 
+    await response.session.close() 
 
       
  
 
 
 
-def get_data_from_url_week():
+async def get_data_from_url_week():
     calenderPEIP1 = CalenderMaker()
     calenderPEIP2 = CalenderMaker()
     calenderPEIPC = CalenderMaker()
@@ -110,29 +120,29 @@ def get_data_from_url_week():
     calenderAPP4 = CalenderMaker()
     calenderAPP5 = CalenderMaker()
 
-    for j in range(10,11):
-        for i in range(3,4):
-            get_data_from_url(url_peip1,str(i),str(j),"Peip1",calenderPEIP1)
-            get_data_from_url(url_peip2,str(i),str(j),"Peip2",calenderPEIP2)
-            get_data_from_url(url_peipc,str(i),str(j),"Peipc",calenderPEIPC)
-            get_data_from_url(url_ET3,str(i),str(j),"Et3",calenderET3)
-            get_data_from_url(url_ET4,str(i),str(j),"Et4",calenderET4)
-            get_data_from_url(url_ET5,str(i),str(j),"Et5",calenderET5)
-            get_data_from_url(url_app3,str(i),str(j),"App3",calenderAPP3)
-            get_data_from_url(url_app4,str(i),str(j),"App4",calenderAPP4)
-            get_data_from_url(url_app5,str(i),str(j),"App5",calenderAPP5)
+    for j in range(7,58):
+        for i in range(0,6):
+            # get_data_from_url(url_peip1,str(i),str(j),"Peip1",calenderPEIP1)
+            # get_data_from_url(url_peip2,str(i),str(j),"Peip2",calenderPEIP2)
+            # get_data_from_url(url_peipc,str(i),str(j),"Peipc",calenderPEIPC)
+            # get_data_from_url(url_ET3,str(i),str(j),"Et3",calenderET3)
+            await get_data_from_url(url_ET4,str(i),str(j),"Et4",calenderET4)
+            # get_data_from_url(url_ET5,str(i),str(j),"Et5",calenderET5)
+            # get_data_from_url(url_app3,str(i),str(j),"App3",calenderAPP3)
+            # get_data_from_url(url_app4,str(i),str(j),"App4",calenderAPP4)
+            # get_data_from_url(url_app5,str(i),str(j),"App5",calenderAPP5)
 
-    calenderPEIP1.save("Peip1.ics")
-    calenderPEIP2.save("Peip2.ics")
-    calenderPEIPC.save("Peipc.ics")
-    calenderET3.save("Et3.ics")
+    # calenderPEIP1.save("Peip1.ics")
+    # calenderPEIP2.save("Peip2.ics")
+    # calenderPEIPC.save("Peipc.ics")
+    # calenderET3.save("Et3.ics")
     calenderET4.save("Et4.ics")
-    calenderET5.save("Et5.ics")
-    calenderAPP3.save("App3.ics")
-    calenderAPP4.save("App4.ics")
-    calenderAPP5.save("App5.ics")
+    # calenderET5.save("Et5.ics")
+    # calenderAPP3.save("App3.ics")
+    # calenderAPP4.save("App4.ics")
+    # calenderAPP5.save("App5.ics")
 
     
 
-get_data_from_url_week()
+asyncio.run(get_data_from_url_week())
 print("done")
