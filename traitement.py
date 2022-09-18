@@ -43,17 +43,19 @@ def get_data_from_url(url,day,week,Promo,calender):
     response = session.get(url)
     response.html.render(10,script,sleep=2,reload=True,keep_page=True)
      
-    dateJour=response.html.find('#4')[0].text.split(' ')
-    day=dateJour[1].split('/')
-
-    dateJourIcalender=day[2]+"-"+day[1]+"-"+day[0]
+    if response.html.find('#4')!=[]:
+        
+        dateJour=response.html.find('#4')[0].text.split(' ')
+        day=dateJour[1].split('/')
+        dateJourIcalender=day[2]+"-"+day[1]+"-"+day[0]
     
     EmploieDuTemps=[]
-
-    for i in range(0,100):
+    # i=0
+    # 
+    for i in range (40):
         string="#inner"+str(i)
         dataSession.append(response.html.find(string) ) #recuperer les informations d'un jour 
-
+        
 
         # on traite les informations d'un jour
         
@@ -83,10 +85,11 @@ def get_data_from_url(url,day,week,Promo,calender):
 
                 c=Cours(cours[0],begin,end,info)
                 EmploieDuTemps.append(c)
-
+                
     j=Jour(dateJour[0],dateJourIcalender,EmploieDuTemps)
+    print(j)
     calender.addEvent2(j)
-    calender.save(Promo+".ics")
+    
 
     
     response.session.close() 
@@ -107,10 +110,29 @@ def get_data_from_url_week():
     calenderAPP4 = CalenderMaker()
     calenderAPP5 = CalenderMaker()
 
-    for j in range(9,11):
-        for i in range(0,6):
+    for j in range(10,11):
+        for i in range(3,4):
             get_data_from_url(url_peip1,str(i),str(j),"Peip1",calenderPEIP1)
+            get_data_from_url(url_peip2,str(i),str(j),"Peip2",calenderPEIP2)
+            get_data_from_url(url_peipc,str(i),str(j),"Peipc",calenderPEIPC)
+            get_data_from_url(url_ET3,str(i),str(j),"Et3",calenderET3)
+            get_data_from_url(url_ET4,str(i),str(j),"Et4",calenderET4)
+            get_data_from_url(url_ET5,str(i),str(j),"Et5",calenderET5)
+            get_data_from_url(url_app3,str(i),str(j),"App3",calenderAPP3)
+            get_data_from_url(url_app4,str(i),str(j),"App4",calenderAPP4)
+            get_data_from_url(url_app5,str(i),str(j),"App5",calenderAPP5)
 
+    calenderPEIP1.save("Peip1.ics")
+    calenderPEIP2.save("Peip2.ics")
+    calenderPEIPC.save("Peipc.ics")
+    calenderET3.save("Et3.ics")
+    calenderET4.save("Et4.ics")
+    calenderET5.save("Et5.ics")
+    calenderAPP3.save("App3.ics")
+    calenderAPP4.save("App4.ics")
+    calenderAPP5.save("App5.ics")
 
+    
 
 get_data_from_url_week()
+print("done")
